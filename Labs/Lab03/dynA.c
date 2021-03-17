@@ -1,9 +1,9 @@
-#include <sdio.h> /*to write stuff*/
+#include <stdio.h> /*to write stuff*/
 #include <stdlib.h> /*to use malloc and free*/
 
 int main()
 {
-  /*char T[10]; /*an array of characters, but we don't know how much space will it take- for now we allocate 10 bytes*/
+  /*char T[10];*/ /*an array of characters, but we don't know how much space will it take- for now we allocate 10 bytes*/
 
   char *T;
   int i;
@@ -16,7 +16,7 @@ int main()
   c = getchar();
   while(EOF != c){
     if(i == A){
-      A = A*2:
+      A = A*2;
       T = realloc(T, A*sizeof(char));
     }
     T[i] = (char) c;
