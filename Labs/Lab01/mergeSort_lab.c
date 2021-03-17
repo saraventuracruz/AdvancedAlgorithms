@@ -34,7 +34,7 @@ void merge(int i, int k, int j)
 	}
       }
     }
-    /* l++; */
+    l++;
   }
 }
 
