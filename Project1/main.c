@@ -11,10 +11,10 @@ int main(){
     char *text = malloc(textSize*sizeof(char));
     char *pattern = malloc(patternSize*sizeof(char));
     int textPosition = 0; /* position of characters in the text */
-    int patternCounter = 0; /* the number of characters in the pattern */
+    /* int patternCounter = 0;*/ /* the number of characters in the pattern */
     bool isReadText = false;
     bool isReadPattern = false;
-    bool isNewLine = false;
+    /*    bool isNewLine = false; */
     bool isLastChar = false;
 
     int readChar = getchar(); /* read input character by character */
