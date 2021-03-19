@@ -109,6 +109,7 @@ void NaiveAlgorithm(char* text, char* pattern){
     int t = 0;
     int p = 0;
     int counter = 0;
+    int i;
 
     if(sizeof(text) < sizeof(pattern) || sizeof(text) < 1 || sizeof(pattern) < 1){
         printf("the size of the text is 0 or smaller than the size of the pattern, or the size of the pattern is 0\n");
@@ -143,7 +144,6 @@ void NaiveAlgorithm(char* text, char* pattern){
         }
     }
 
-    int i;
     for(i = 0; i < counter; i++){
         printf("%d", posStore[i]);
         if(i < counter-1)
