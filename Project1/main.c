@@ -8,11 +8,11 @@ char* ReadLine(FILE*, bool);
 int main(){
 
     /* Initialize variables */
-    // int textSize = 2;
-    // int patternSize = 2;
+    /* int textSize = 2; */
+    /* int patternSize = 2; */
     char *text = malloc(2*sizeof(char));
     char *pattern  = malloc(2*sizeof(char));
-    // int textPosition = 0; /* position of characters in the text */
+    /* int textPosition = 0;*/ /* position of characters in the text */
     /* int patternCounter = 0;*/ /* the number of characters in the pattern */
     bool isReadText = false;
     bool isReadPattern = false;
@@ -32,20 +32,20 @@ int main(){
             break;
 
         if(isReadText){
-            // /* reset text */
-            // readChar = getchar(); /* space */
+            
+	  /* readChar = getchar();
             // if(readChar == EOF)
-            //     break;
-            // free(text); /* reset text */
+	    //     break;
+            // free(text);
             // textPosition = 0;
             // textSize = 2; 
-            // text = malloc(textSize*sizeof(char)); /* another option would be to reuse the previous structure: this should be done carefully!*/
+            // text = malloc(textSize*sizeof(char));
             // while(!isLastChar){
             //     if(readChar == '\n'){
-            //         readChar = '-'; /* character to end text */
+            //         readChar = '-';
             //         isLastChar = true;
             //     }
-            //     /* read text */
+            //    
             //     if(textPosition == textSize){
             //         textSize *= 2;
             //         text = realloc(text, textSize*sizeof(char));
@@ -56,7 +56,7 @@ int main(){
             //         readChar = getchar();
             //     printf("readChar: %c\n", (char) readChar);
 
-            // }
+            // }*/
 
             free(text);
             text = ReadLine(stdin, isReadPattern);
