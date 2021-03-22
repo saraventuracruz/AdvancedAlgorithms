@@ -250,7 +250,7 @@ void KnuthMorrisPratt(char* text, char* pattern, int* prefix){
         t++;
     }
 
-    printf("%d ", nComparisons);
+    
     for(i = 0; i < posCounter; i++){
         printf("%d", posStore[i]);
         if(i < posCounter-1)
@@ -258,6 +258,7 @@ void KnuthMorrisPratt(char* text, char* pattern, int* prefix){
         else
             printf("\n");
     }
+    printf("%d \n", nComparisons);
 
     free(posStore);
     
