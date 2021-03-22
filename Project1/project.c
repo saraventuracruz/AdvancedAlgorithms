@@ -5,6 +5,8 @@
 
 char* ReadLine(FILE*, bool);
 void NaiveAlgorithm(char*, char*);
+void KnuthMorrisPratt(char*, char*, int*);
+int* ComputePrefixFunction(char*);
 
 int main(){
 
@@ -12,12 +14,13 @@ int main(){
     char *text = malloc(2*sizeof(char));
     char *pattern  = malloc(2*sizeof(char));
     bool isReadText = false;
-    bool isReadPattern = false;    
+    bool isReadPattern = false;
+    int *prefix = NULL;    
 
     int readChar = getchar(); /* read input character by character */
     while(readChar != EOF){
 
-        /* printf("readChar: %c\n", (char) readChar);*/
+        /*printf("readChar: %c\n", (char) readChar);*/
         isReadText = readChar == 'T';
         /*printf("isReadText %d\n", (int) isReadText);*/
         isReadPattern = readChar == 'N'|| readChar == 'K' || readChar == 'B';
@@ -42,8 +45,10 @@ int main(){
 
             if(readChar == 'N')
                 NaiveAlgorithm(text, pattern);
-            /*else if (readChar == 'K')*/
-                /*printf("---------------Knuth Morris Pratt-------------\n");*/
+            else if (readChar == 'K'){
+                prefix = ComputePrefixFunction(pattern);
+                KnuthMorrisPratt(text, pattern, prefix);
+            }
             /*else if(readChar == 'B')*/
                 /*printf("----------------Boyer Moore-----------------\n");*/
             /*else*/
@@ -155,4 +160,105 @@ void NaiveAlgorithm(char* text, char* pattern){
     free(posStore);
 
 
+}
+
+int* ComputePrefixFunction(char* pattern){
+
+    /*printf("computing prefix of %s\n", pattern);*/
+
+    int patternSize = sizeof(pattern);
+    /*printf("patternSize: %d\n", patternSize);*/
+    int *prefix = malloc(patternSize*sizeof(int));
+    int p = 0;
+    int q = 1;
+    int k = -1;
+
+    if(sizeof(pattern) < 1){
+        free(prefix);
+        return NULL;
+    }
+
+    prefix[k+1] = 0;    
+    while(pattern[q] != '$'){
+        while(k >= 0 && pattern[k+1] != pattern[q]){
+            k = prefix[k]-1;
+            /*printf("pattern[k+1]: %c pattern[q]: %d\n", pattern[k+1],pattern[q]);*/
+        }
+        if (pattern[k+1] == pattern[q])
+            k++;
+        prefix[q] = k+1;
+        q++;
+    }
+
+    return prefix;
+
+}
+
+void KnuthMorrisPratt(char* text, char* pattern, int* prefix){
+
+    /*printf("-------------KMP----------------\n");*/
+
+    int posStoreSize = 2;
+    int *posStore = malloc(posStoreSize*sizeof(int));
+    int t = 0;
+    int p = -1;
+    int posCounter = 0;
+    int i;
+    int nComparisons = 0;
+
+    if(sizeof(text) < sizeof(pattern) || sizeof(text) < 1 || sizeof(pattern) < 1){
+        printf("the size of the text is 0 or smaller than the size of the pattern, or the size of the pattern is 0\n");
+        return;
+    }
+    /*printf("text: %s\n", text);*/
+    /*printf("pattern: %s\n", pattern);*/
+    /*printf("prefix: ");*/
+    /*for(i = 0; i<sizeof(prefix); i++){*/
+    /*    printf("%d ", prefix[i]);*/
+    /*}*/
+    /*printf("\n");*/
+
+
+    if(sizeof(pattern) < 1){
+        free(posStore);
+        return;
+    }
+ 
+    while(text[t] != '-'){
+        while(p >= 0 && pattern[p+1] != text[t]){
+            nComparisons++;
+            p = prefix[p]-1;
+        }
+
+        if (pattern[p+1] == text[t]){
+            p++;
+            nComparisons++;
+        }else{
+            nComparisons++;
+        }
+
+        if(pattern[p+1] == '$'){
+            posCounter++;
+            if(posStoreSize == posCounter){
+                posStoreSize *= 2;
+                posStore = realloc(posStore, posStoreSize*sizeof(int));
+            }
+            posStore[posCounter-1] = t;
+            p = prefix[p-1]-1;
+        }
+        t++;
+    }
+
+    printf("%d ", nComparisons);
+    for(i = 0; i < posCounter; i++){
+        printf("%d", posStore[i]);
+        if(i < posCounter-1)
+            printf(" ");
+        else
+            printf("\n");
+    }
+
+    free(posStore);
+    
+     
 }
