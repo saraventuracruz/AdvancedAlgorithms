@@ -169,7 +169,7 @@ int* ComputePrefixFunction(char* pattern){
     int patternSize = sizeof(pattern);
     /*printf("patternSize: %d\n", patternSize);*/
     int *prefix = malloc(patternSize*sizeof(int));
-    int p = 0;
+    /* int p = 0;*/
     int q = 1;
     int k = -1;
 
