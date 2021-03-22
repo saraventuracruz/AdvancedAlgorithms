@@ -46,6 +46,7 @@ int main(){
             if(readChar == 'N')
                 NaiveAlgorithm(text, pattern);
             else if (readChar == 'K'){
+                free(prefix);
                 prefix = ComputePrefixFunction(pattern);
                 KnuthMorrisPratt(text, pattern, prefix);
             }
@@ -119,6 +120,7 @@ void NaiveAlgorithm(char* text, char* pattern){
 
     if(sizeof(text) < sizeof(pattern) || sizeof(text) < 1 || sizeof(pattern) < 1){
         printf("the size of the text is 0 or smaller than the size of the pattern, or the size of the pattern is 0\n");
+        free(posStore);
         return;
     }
 
@@ -249,8 +251,7 @@ void KnuthMorrisPratt(char* text, char* pattern, int* prefix){
         }
         t++;
     }
-
-    
+   
     for(i = 0; i < posCounter; i++){
         printf("%d", posStore[i]);
         if(i < posCounter-1)
