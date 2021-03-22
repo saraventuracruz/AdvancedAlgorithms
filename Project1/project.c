@@ -60,6 +60,7 @@ int main(){
 
     free(text);
     free(pattern);
+    free(prefix);
 
     return 0;
 }
@@ -243,7 +244,7 @@ void KnuthMorrisPratt(char* text, char* pattern, int* prefix){
                 posStoreSize *= 2;
                 posStore = realloc(posStore, posStoreSize*sizeof(int));
             }
-            posStore[posCounter-1] = t;
+            posStore[posCounter-1] = t-p;
             p = prefix[p-1]-1;
         }
         t++;
