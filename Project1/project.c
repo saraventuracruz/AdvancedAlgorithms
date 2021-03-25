@@ -203,14 +203,13 @@ void NaiveAlgorithm(char* text, char* pattern){
 sDynArray ComputePrefixFunction(char* pattern){
 
     /*printf("computing prefix of %s\n", pattern);*/
-
+    /* int p = 0;*/
+    int q = 1;
+    int k = -1;
     int patternSize = sizeof(pattern);
     /*printf("patternSize: %d\n", patternSize);*/
     sDynArray prefix;
     initDynArray(&prefix, patternSize);
-    /* int p = 0;*/
-    int q = 1;
-    int k = -1;
 
     if(sizeof(pattern) < 1){
         freeDynArray(&prefix);

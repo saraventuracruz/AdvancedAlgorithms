@@ -1,2 +1,2 @@
 project:
-	gcc -g -ansi -pedantic -Wall -o project main.c
+	gcc -g -ansi -pedantic -Wall -o project project.c
