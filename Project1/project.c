@@ -34,19 +34,21 @@ void freeDynArray(sDynArray *dArr) {
   dArr->size = 0;
 }
 
-char* ReadLine(FILE*, bool);
-void NaiveAlgorithm(char*, char*);
-void KnuthMorrisPratt(char*, char*, sDynArray);
-sDynArray ComputePrefixFunction(char*);
+int ReadLine(FILE*, bool, char*);
+void NaiveAlgorithm(char*, int, char*, int);
+void KnuthMorrisPratt(char*, int, char*, int, int*);
+void ComputePrefixFunction(char*, int, int*);
 
 int main(){
 
     /* Initialize variables */
-    char *text = NULL;
-    char *pattern  = NULL;
+    char *text = malloc(2*sizeof(char));
+    char *pattern  = malloc(2*sizeof(char));
     bool isReadText = false;
     bool isReadPattern = false;
-    sDynArray prefix;    
+    int *prefix = malloc(2*sizeof(int));
+    int textSize = 0;
+    int patternSize = 0;    
 
     char readChar = getchar(); /* read input character by character */
     while(readChar != EOF){
@@ -60,28 +62,26 @@ int main(){
             break;
 
         if(isReadText){
-            free(text);
-            text = NULL;
+
             /*printf("text after free: %s size %lu\n", text, sizeof(text));*/
-            text = ReadLine(stdin, isReadPattern); /* allocating memory here! */
+            textSize = ReadLine(stdin, false, text); /* allocating memory here! */
             /*printf("Read text: ");*/
             /*printf("%s\n", text);*/
         }
 
         if(isReadPattern){
-            free(pattern);
-            pattern = NULL;
-            pattern = ReadLine(stdin, isReadPattern); /* allocating memory here! */
+
+            patternSize = ReadLine(stdin, isReadPattern, pattern); /* allocating memory here! */
 
             /*printf("Read pattern: ");*/
             /*printf("%s\n", pattern);*/
 
             if(readChar == 'N')
-                NaiveAlgorithm(text, pattern);
+                NaiveAlgorithm(text, textSize, pattern, patternSize);
             else if (readChar == 'K'){
-                freeDynArray(&prefix);
-                prefix = ComputePrefixFunction(pattern);
-                KnuthMorrisPratt(text, pattern, prefix);
+                /*freeDynArray(&prefix);*/
+                ComputePrefixFunction(pattern, patternSize, prefix);
+                KnuthMorrisPratt(text, textSize, pattern, patternSize, prefix);
             }
             /*else if(readChar == 'B')*/
                 /*printf("----------------Boyer Moore-----------------\n");*/
@@ -94,15 +94,14 @@ int main(){
 
     free(text);
     free(pattern);
-    freeDynArray(&prefix);
+    free(prefix);
 
     return 0;
 }
 
-char* ReadLine(FILE *inputFile, bool isPattern){
+int ReadLine(FILE *inputFile, bool isPattern, char* text){
     
-    int textSize = 2;
-    char *text = malloc(textSize*sizeof(char)); 
+    int textSize = sizeof(text);
     int characterCounter = 0;
     bool isLastChar = false;
     int readChar = getchar(); /* white space */
@@ -110,16 +109,9 @@ char* ReadLine(FILE *inputFile, bool isPattern){
     readChar = getchar();
     /*printf("readChar: %c\n", (char) readChar);*/
     if(readChar == EOF)
-        return NULL;
-    while(!isLastChar){
-        if(readChar == '\n'){
-            if(isPattern)
-                readChar = '$';
-            else
-                readChar = '-'; /* character to end text */
-            isLastChar = true;
-            /*printf("last char\n");*/
-        }
+        return 0;
+    while(readChar != '\n'){
+
         /* read text */
         if(characterCounter == textSize){
             textSize *= 2;
@@ -127,22 +119,16 @@ char* ReadLine(FILE *inputFile, bool isPattern){
         }
         text[characterCounter] = (char) readChar;
         characterCounter++;
-        if(!isLastChar){
-            readChar = getchar();
-            /*printf("readChar: %c\n", (char) readChar);*/
-        }       
+        /*printf("readChar: %c, counter: %d\n", (char) readChar, characterCounter); */
+        readChar = getchar();
+              
     }
 
-    return text;
+    return characterCounter;
 
 }
 
-void NaiveAlgorithm(char* text, char* pattern){
-
-    /*printf("-------------Naive algorithm----------------\n");*/
-
-    /*printf("text: %s\n", text);*/
-    /*printf("pattern: %s\n", pattern);*/
+void NaiveAlgorithm(char* text, int textSize, char* pattern, int patternSize){
 
     int posStoreSize = 2;
     int *posStore = malloc(posStoreSize*sizeof(int));
@@ -151,37 +137,37 @@ void NaiveAlgorithm(char* text, char* pattern){
     int matchCounter;
     int i;
 
-    if(sizeof(text) < sizeof(pattern) || sizeof(text) < 1 || sizeof(pattern) < 1){
+    if(textSize < patternSize || textSize < 1 || patternSize < 1){
         /*printf("the size of the text is 0 or smaller than the size of the pattern, or the size of the pattern is 0\n");*/
         free(posStore);
+        posStore = NULL;
         return;
     }
 
     matchCounter = 0;
-    t = 0;
     p = 0;   
-    while(text[t] != '-'){
+    for(t = 0; t < textSize; t++){
         /*printf("text[t]: %c\n", text[t]);*/
         /*printf("pattern[p]: %c\n", pattern[p]);*/
         
-        while(pattern[p] != '$' && text[t+p] != '-' && pattern[p] == text[t+p]){
+        while(p < patternSize && t+p < textSize && pattern[p] == text[t+p]){
             /*printf("match t: %d p: %d\n", t, p);*/
             p++;
         }
-        if(pattern[p] == '$'){
+        if(p == patternSize-1){
             matchCounter++;
             if(posStoreSize == matchCounter){
                 posStoreSize *= 2;
                 posStore = realloc(posStore, posStoreSize*sizeof(int));
             }
             posStore[matchCounter-1] = t;
-            t++;
+            /*t++;*/
             p = 0;
         }
         else if(pattern[p] != text[t+p]){
             /*printf("p: %d\n", p);*/
             p = 0;
-            t++;
+            /*t++;*/
         }
     }
 
@@ -190,9 +176,9 @@ void NaiveAlgorithm(char* text, char* pattern){
         printf("%d", posStore[i]);
         if(i < matchCounter-1)
             printf(" ");
-        else
-            printf("\n");
     }
+
+    printf("\n");
 
     free(posStore);
     posStore = NULL;
@@ -200,63 +186,62 @@ void NaiveAlgorithm(char* text, char* pattern){
 
 }
 
-sDynArray ComputePrefixFunction(char* pattern){
+void ComputePrefixFunction(char* pattern, int patternSize, int* prefix){
 
     /*printf("computing prefix of %s\n", pattern);*/
     /* int p = 0;*/
     int q = 1;
-    int k = -1;
-    int patternSize = sizeof(pattern);
+    int k = 0;
+    prefix = realloc(prefix, patternSize);
     /*printf("patternSize: %d\n", patternSize);*/
-    sDynArray prefix;
-    initDynArray(&prefix, patternSize);
+    /*sDynArray prefix;*/
+    /*initDynArray(&prefix, patternSize);*/
 
-    if(sizeof(pattern) < 1){
-        freeDynArray(&prefix);
-        return prefix;
+    if(patternSize <= 1){
+        /*freeDynArray(&prefix);*/
+        return;
     }
 
-    insertElement(&prefix, 0);  
-    while(pattern[q] != '$'){
-        while(k >= 0 && pattern[k+1] != pattern[q]){
-            k = prefix.array[k]-1;
-            /*printf("pattern[k+1]: %c pattern[q]: %d\n", pattern[k+1],pattern[q]);*/
-        }
-        if (pattern[k+1] == pattern[q])
+    prefix[0] = 0;
+    /*insertElement(&prefix, 0);  */
+    for(q = 1; q < patternSize; q++){
+
+        k = prefix[q-1];
+        while (k > 0 && pattern[q] != pattern[k])
+            k = prefix[k-1];
+        if (pattern[q] == pattern[k])
             k++;
-        insertElement(&prefix, k+1);
-        /*prefix.array[q] = k+1;*/
-        q++;
+        prefix[q] = k;
+
     }
 
-    return prefix;
+    return;
 
 }
 
-void KnuthMorrisPratt(char* text, char* pattern, sDynArray prefix){
+void KnuthMorrisPratt(char* text, int textSize, char* pattern, int patternSize, int* prefix){
 
     /*printf("-------------KMP----------------\n");*/
 
     int posStoreSize = 2;
     int *posStore = malloc(posStoreSize*sizeof(int));
-    int t = 0;
-    int p = -1;
+    int t;
+    int p;
     int posCounter = 0;
     int i;
     int nComparisons = 0;
 
-    if(sizeof(text) < sizeof(pattern) || sizeof(text) < 1 || sizeof(pattern) < 1){
-        printf("the size of the text is 0 or smaller than the size of the pattern, or the size of the pattern is 0\n");
+    if(textSize < patternSize || textSize < 1 || patternSize < 1){
+        /*printf("the size of the text is 0 or smaller than the size of the pattern, or the size of the pattern is 0\n");*/
+        printf("\n"); /* the pattern never occurs on the text*/
+        printf("0\n"); /* 0 comparisons */
+        free(posStore);
+        posStore = NULL;
         return;
     }
 
-    /*for(i = 0; i<prefix.used; i++){
-        printf("pos %d: %d ", i, prefix.array[i]);
-    }
-    printf("\n");*/
 
-
-    if(sizeof(pattern) < 1){
+    if(patternSize < 1){
         free(posStore);
         posStore = NULL;
         return;
@@ -264,20 +249,15 @@ void KnuthMorrisPratt(char* text, char* pattern, sDynArray prefix){
     
     /*printf("pattern: %s\n", pattern);*/
     /*printf("text: %s\n", text);*/
-    while(text[t] != '-'){
-        /*printf("\np: %d, prefix[p+1]: %d\n", p, prefix.array[p+1]);*/
-        /*printf("t: %d\n", t);*/
-        /*printf("pattern[p+1]: %c\n", pattern[p+1]);*/
-        /*printf("text[t]: %c\n", text[t]);*/
-        /*printf("pattern[p+1] != text[t]: %d\n", pattern[p+1] != text[t]);*/
-        /*printf("--------\n");*/
-        /*printf("p >= 0 && pattern[p+1] != text[t]: %d\n", p >= 0 && pattern[p+1] != text[t]);*/
-        /*printf("--------\n");*/
-        /*printf("c");*/
+
+
+    p = -1;
+    for(t = 0; t < textSize; t++){
+
         while(p >= 0 && pattern[p+1] != text[t]){
              /*printf("a");*/
              nComparisons++;
-             p = prefix.array[p+1]-1;
+             p = prefix[p]-1;
              /*printf("b");*/
          }
          if(p>= 0 && pattern[p+1] == text[t])
@@ -293,7 +273,7 @@ void KnuthMorrisPratt(char* text, char* pattern, sDynArray prefix){
             nComparisons++;
         }
 
-        if(pattern[p+1] == '$'){
+        if(p+1 == patternSize){
             /*printf("h");*/
             posCounter++;
             if(posStoreSize == posCounter){
@@ -305,20 +285,18 @@ void KnuthMorrisPratt(char* text, char* pattern, sDynArray prefix){
             /*printf("k");*/
             posStore[posCounter-1] = t-p;
             /*printf("l");*/
-            p = prefix.array[p+1]-1;
+            p = prefix[p]-1;
             /*printf("m");*/
         }
         /*printf("n");*/
-        t++;
     }
    
     for(i = 0; i < posCounter; i++){
         printf("%d", posStore[i]);
         if(i < posCounter-1)
             printf(" ");
-        else
-            printf("\n");
     }
+    printf("\n");
     printf("%d \n", nComparisons);
 
     free(posStore);
