@@ -103,7 +103,6 @@ int ReadLine(FILE *inputFile, bool isPattern, char* text){
     
     int textSize = sizeof(text);
     int characterCounter = 0;
-    bool isLastChar = false;
     int readChar = getchar(); /* white space */
 
     readChar = getchar();
