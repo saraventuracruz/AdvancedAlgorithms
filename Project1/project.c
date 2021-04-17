@@ -129,7 +129,6 @@ void NaiveAlgorithm(char* text, int textSize, char* pattern, int patternSize){
     int i;
 
     if(textSize < patternSize || textSize < 1 || patternSize < 1){
-        /*printf("the size of the text is 0 or smaller than the size of the pattern, or the size of the pattern is 0\n");*/
         printf("\n"); /* the pattern never occurs on the text*/
         free(posStore);
         posStore = NULL;
@@ -139,8 +138,6 @@ void NaiveAlgorithm(char* text, int textSize, char* pattern, int patternSize){
     matchCounter = 0;
     p = 0;   
     for(t = 0; t < textSize; t++){
-        /*printf("text[t]: %c\n", text[t]);*/
-        /*printf("pattern[p]: %c\n", pattern[p]);*/
         
         while(p < patternSize && t+p < textSize && pattern[p] == text[t+p]){
             p++;
@@ -177,24 +174,18 @@ void NaiveAlgorithm(char* text, int textSize, char* pattern, int patternSize){
 
 void ComputePrefixFunction(char* pattern, int patternSize, int* prefix){
 
-    /*printf("computing prefix of %s\n", pattern);*/
-    /* int p = 0;*/
-    int q = 1;
-    int k = 0;
+    int q = 1; /* point to the second position of the pattern: propper suffix*/
+    int k = -1; /* point to the position "right before" the pattern */
     prefix = realloc(prefix, patternSize*sizeof(int));
-
-    if(patternSize <= 1){
-        return;
-    }
 
     prefix[0] = 0;
     for(q = 1; q < patternSize; q++){
-        k = prefix[q-1];
-        while (k > 0 && pattern[q] != pattern[k])
-            k = prefix[k-1];
-        if (pattern[q] == pattern[k])
+        /*k = prefix[q-1];*/
+        while (k >= 0 &&  pattern[k+1] != pattern[q])
+            k = prefix[k]-1;
+        if (pattern[k+1] == pattern[q])
             k++;
-        prefix[q] = k;
+        prefix[q] = k+1;
     }
     return;
 }
@@ -231,34 +222,31 @@ void KnuthMorrisPratt(char* text, int textSize, char* pattern, int patternSize, 
             nComparisons++;
         }
 
-        /*printf("c");*/
         if (pattern[p+1] == text[t]){
             nComparisons++;
-            /*printf("d");*/
             p++;
-            /*printf("e");*/
         }else{
             nComparisons++;
         }
         /* found a match */
         if(p+1 == patternSize){
-            /*printf("h");*/
             posCounter++;
-            if(posStoreSize == posCounter){
-                /*printf("i");*/
+
+            if(posCounter == posStoreSize ){
+                /* grow the positions storage*/
                 posStoreSize *= 2;
                 posStore = realloc(posStore, posStoreSize*sizeof(int));
-                /*printf("j");*/
             }
-            /*printf("k");*/
+
+            /* save position */
             posStore[posCounter-1] = t-p;
-            /*printf("l");*/
+            /* update p */
             p = prefix[p]-1;
-            /*printf("m");*/
         }
-        /*printf("n");*/
     }
+    /* end of text */
    
+    /* print positions and number of comparisons*/
     for(i = 0; i < posCounter; i++){
         printf("%d ", posStore[i]);
     }
@@ -266,8 +254,7 @@ void KnuthMorrisPratt(char* text, int textSize, char* pattern, int patternSize, 
     printf("%d \n", nComparisons);
 
     free(posStore);
-    posStore = NULL;
-        
+    posStore = NULL;       
 }
 
 int FindZValue(char* pattern, int patternSize, int k){
@@ -283,8 +270,7 @@ int FindZValue(char* pattern, int patternSize, int k){
 }
 
 void ZAlgorithm(char* pattern, int patternSize, int* zTable){
-
-    
+  
     int* rTable = malloc(patternSize*sizeof(int));
     int* lTable = malloc(patternSize*sizeof(int));
     int i = 0; /* pattern iterator*/
