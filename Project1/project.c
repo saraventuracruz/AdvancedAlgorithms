@@ -428,7 +428,7 @@ void BoyerMoore(char* text, int textSize, char* pattern, int patternSize){
 
     int *LTable = malloc(patternSize*sizeof(int)); /* for the (strong) good suffix rule*/
     int *lTable = malloc(patternSize*sizeof(int)); /* for the good suffix rule */
-    int i;
+    /* int i;*/
 
     /*PreprocessPattern(pattern, patternSize, badCharTable, LTable, lTable);*/
     printf("\n");
