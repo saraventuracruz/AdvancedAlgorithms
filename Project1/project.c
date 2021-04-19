@@ -96,11 +96,13 @@ int main(){
 }
 
 int ReadLine(FILE *inputFile, char* text){
-    
-    int textSize = sizeof(*text);
+
+    int textSize = 2;
     int characterCounter = 0;
     int readChar = getchar(); /* white space */
 
+    free(text);
+    text = malloc(textSize*sizeof(char));
     readChar = getchar();
     /*printf("readChar: %c\n", (char) readChar);*/
     if(readChar == EOF)
