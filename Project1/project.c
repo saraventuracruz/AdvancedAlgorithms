@@ -56,7 +56,7 @@ int main(){
 
         if(isReadText){
 
-            /*printf("text after free: %s size %lu\n", text, sizeof(text));*/
+            free(text);
             textSize = ReadLine(stdin, text); /* allocating memory here! */
             /*printf("Read text: ");*/
             /*printf("%s\n", text);*/
@@ -64,6 +64,7 @@ int main(){
 
         if(isReadPattern){
 
+            free(pattern);
             patternSize = ReadLine(stdin, pattern); /* allocating memory here! */
 
             /*printf("Read pattern: ");*/
@@ -73,6 +74,7 @@ int main(){
                 NaiveAlgorithm(text, textSize, pattern, patternSize);
             else if (readChar == 'K'){
                 /*freeDynArray(&prefix);*/
+                free(prefix);
                 ComputePrefixFunction(pattern, patternSize, prefix);
                 KnuthMorrisPratt(text, textSize, pattern, patternSize, prefix);
             }
@@ -97,26 +99,23 @@ int main(){
 
 int ReadLine(FILE *inputFile, char* text){
 
-    int textSize = 2;
     int characterCounter = 0;
     int readChar = getchar(); /* white space */
-
-    free(text);
-    text = malloc(textSize*sizeof(char));
+    
+    int textSize = 2; /* to keep track of the size of *text*, which is a dynamic array of chars */
+    text = malloc(textSize*sizeof(char)); /* alloc memory to save the read chars */
+    
     readChar = getchar();
-    /*printf("readChar: %c\n", (char) readChar);*/
     if(readChar == EOF)
         return 0;
     while(readChar != '\n'){
-
+        characterCounter++;
         /* read text */
-        if(characterCounter+1 == textSize){
+        if(characterCounter== textSize){
             textSize *= 2;
             text = realloc(text, textSize*sizeof(char));
         }
-        text[characterCounter] = (char) readChar;
-        characterCounter++;
-        /*printf("readChar: %c, counter: %d\n", (char) readChar, characterCounter);*/
+        text[characterCounter-1] = (char) readChar;
         readChar = getchar();
               
     }
@@ -179,15 +178,13 @@ void NaiveAlgorithm(char* text, int textSize, char* pattern, int patternSize){
 
     free(posStore);
     posStore = NULL;
-
-
 }
 
 void ComputePrefixFunction(char* pattern, int patternSize, int* prefix){
 
     int q = 1; /* point to the second position of the pattern: propper suffix*/
     int k = -1; /* point to the position "right before" the pattern */
-    prefix = realloc(prefix, patternSize*sizeof(int));
+    prefix = malloc(patternSize*sizeof(int));
 
     prefix[0] = 0;
     for(q = 1; q < patternSize; q++){
@@ -228,22 +225,16 @@ void KnuthMorrisPratt(char* text, int textSize, char* pattern, int patternSize, 
 
         /*printf("\nt: %d ", t);*/
         while(p >= 0 && !EqualCharQ(pattern[p+1],text[t], &nComparisons)){
-            /*nComparisons++;*/
             p = prefix[p]-1;
         }
-        /*if(p>= 0 && pattern[p+1] == text[t]){*/
-            /*nComparisons++;*/
-        /*}*/
 
         if (EqualCharQ(pattern[p+1],text[t], &nComparisons)){
-            /*nComparisons++;*/
             p++;
         }
         /* found a match */
         if(p+1 == patternSize){
             posCounter++;
-
-            if(posCounter == posStoreSize ){
+            if(posCounter == posStoreSize){
                 /* grow the positions storage*/
                 posStoreSize *= 2;
                 posStore = realloc(posStore, posStoreSize*sizeof(int));
@@ -321,7 +312,11 @@ void ZAlgorithm(char* pattern, int patternSize, int* zTable){
     }
 
     free(lTable);
+    lTable = NULL;
     free(rTable);
+    rTable = NULL;
+
+
 }
 
 int GetIndexFromChar(char c){
@@ -355,15 +350,15 @@ int GetIndexFromChar(char c){
     return index;
 }
 
-void PreprocessPattern(char* pattern, int patternSize, int **badCharExtendedTable, int* badCharTable, int* L1Table, int* L2Table, int *l2){
+void PreprocessPattern(char* pattern, int patternSize, int **badCharExtendedTable, int* badCharTable, int* L1Table, int* L2Table, int *lTable){
     
     char* reversedPattern = malloc(patternSize*sizeof(int));
-    int i;
-    int j;
-    int charIndex;
     int* ZTable = malloc(patternSize*sizeof(int));
     int* NTable = malloc(patternSize*sizeof(int));
-    int nCharOcc[AlphabetSize]; /* to register the number of occurrences of a character in the pattern */ 
+    int nCharOcc[AlphabetSize]; /* to register the number of occurrences of a character in the pattern */
+    int i;
+    int j;
+    int charIndex; 
 
     /* initialize the bad character table */
     for(i = 0; i < AlphabetSize; i++){
@@ -394,14 +389,12 @@ void PreprocessPattern(char* pattern, int patternSize, int **badCharExtendedTabl
         L2Table[i] = 0;
     }
 
-    /* fill the L2Table*/
-    *l2 = 0; 
+    /* fill the L2 and l tables*/
     for(j = 0; j < patternSize-1; j++){
         i = patternSize - NTable[j];
+        
         L2Table[i] = j;
-        if(*l2 < j-1 && NTable[j] == j){
-            *l2 = j-1;
-        }
+
     }
 
     /* fill the L1Table*/
@@ -444,12 +437,12 @@ void BoyerMoore(char* text, int textSize, char* pattern, int patternSize){
     int *badCharTable = malloc(AlphabetSize*sizeof(int));
     int *L1Table = malloc(patternSize*sizeof(int)); /* for the (strong) good suffix rule*/
     int *L2Table = malloc(patternSize*sizeof(int)); /* for the good suffix rule */
-    int l2 = 0;
+    int *lTable = malloc(patternSize*sizeof(int));
     int i;
 
-    printf("\nl2: %d", l2);
-    PreprocessPattern(pattern, patternSize, badCharExtendedTable, badCharTable, L1Table, L2Table, &l2);
-    printf("\nl2: %d", l2);
+
+    PreprocessPattern(pattern, patternSize, badCharExtendedTable, badCharTable, L1Table, L2Table, lTable);
+
     for(i = 0; i<AlphabetSize; i++){
         printf("\ni: %d", badCharTable[i]);
     }
@@ -459,12 +452,13 @@ void BoyerMoore(char* text, int textSize, char* pattern, int patternSize){
 
 
 
-    /*for(i = 0; i < AlphabetSize; i++){*/
-        /*free(badCharTable[i]);*/
-    /*}*/
+    for(i = 0; i < AlphabetSize; i++){
+        free(badCharExtendedTable[i]);
+    }
 
     free(badCharExtendedTable);
     free(badCharTable);
     free(L1Table);
     free(L2Table);
+    free(lTable);
 }
