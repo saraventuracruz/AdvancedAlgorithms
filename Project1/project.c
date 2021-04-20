@@ -21,13 +21,12 @@ void ComputePrefixFunction(char*, int, int**);
 
 /* implementation of the boyer moore algorithm */
 void BoyerMoore(char*, int, char*, int);
-int ExtendedBadCharacterRule(int**, char, int);
 int BadCharacterRule(int*, char, int);
 int GoodSuffixRule(int*, int*, int, int);
 
  /* preprocessing steps of the boyer moore algorithm */
 void ZAlgorithm(char*, int, int**);
-void PreprocessPattern(char*, int, int***, int**, int**, int**, int**);
+void PreprocessPattern(char*, int, int**, int**, int**, int**);
 
 
 
@@ -114,7 +113,7 @@ int ReadLine(FILE *inputFile, char** text){
         /* read text */
         if(characterCounter== textSize){
             textSize *= 2;
-            text = realloc(text, textSize*sizeof(char));
+            *text = realloc(*text, textSize*sizeof(char));
         }
         (*text)[characterCounter-1] = (char) readChar;
         readChar = getchar();
@@ -218,14 +217,11 @@ void KnuthMorrisPratt(char* text, int textSize, char* pattern, int patternSize, 
         posStore = NULL;
         return;
     }
-    
-    /*printf("pattern: %s\n", pattern);*/
-    /*printf("text: %s\n", text);*/
+
     p = -1;
     for(t = 0; t < textSize; t++){
 
-        /*printf("\nt: %d ", t);*/
-        while(p >= 0 && !EqualCharQ(pattern[p+1],text[t], &nComparisons)){
+        while(p >= 0 && !EqualCharQ(pattern[p+1], text[t], &nComparisons)){
             p = prefix[p]-1;
         }
 
@@ -240,11 +236,12 @@ void KnuthMorrisPratt(char* text, int textSize, char* pattern, int patternSize, 
                 posStoreSize *= 2;
                 posStore = realloc(posStore, posStoreSize*sizeof(int));
             }
-
             /* save position */
             posStore[posCounter-1] = t-p;
+
             /* update p */
             p = prefix[p]-1;
+            
         }
     }
     /* end of text */
@@ -260,29 +257,16 @@ void KnuthMorrisPratt(char* text, int textSize, char* pattern, int patternSize, 
     posStore = NULL;       
 }
 
-int FindZValue(char* pattern, int patternSize, int k){
-/*returns the length of the longest prefix that matches the substring of pattern starting at k*/
-    int i = 0;    
-
-    while(k+i < patternSize && pattern[i] == pattern[k+i]){
-        i++;
-    }
-    return i; /* i is the length of the longest prefix of pattern that matches the substring starting at k*/
-}
-
 void ZAlgorithm(char* pattern, int patternSize, int** zTable){
   
-    int* rTable = malloc(patternSize*sizeof(int));
-    int* lTable = malloc(patternSize*sizeof(int));
     int i = 0; /* pattern iterator*/
     int z = 0; /* z value*/
-    int k = 0; /* position of beta at the zbox's corresponding prefix*/
-    int betaSize = 0; /* size of beta - a substring of a zbox and its corresponding prefix*/
-    int rt = 0; /* position of the right limit of a z-box*/
-    int lt = 0; /* position of the left limit of a z-box*/
-    *zTable = realloc(*zTable, patternSize*sizeof(int));
-    rTable[0] = lTable[0] = 0;
+    int r = 0; /* position of the right limit of a z-box*/
+    int l = 0; /* position of the left limit of a z-box*/
+    int k = 0; /* position of beta at the z-box's corresponding prefix*/
+    int betaSize = 0; /* size of beta - a substring of a z-box and its corresponding prefix*/
 
+    *zTable = realloc(*zTable, patternSize*sizeof(int));
     (*zTable)[0] = -1; /* undefined */
     /* initialize zTable */
     for(i = 1; i < patternSize; i++){
@@ -291,62 +275,44 @@ void ZAlgorithm(char* pattern, int patternSize, int** zTable){
 
     for(i = 1; i < patternSize; i++){
         /* case 1: i is outside a zbox*/
-        /*if(i > rTable[i-1]){*/
-        if(i > rt){
-            /*z = FindZValue(pattern, patternSize, i);*/
+        if(i > r){
             z = 0; /* size of the current z-box*/
             while(z+i < patternSize && pattern[z] == pattern[z+i]){
                 z++;
             }
             (*zTable)[i] = z;
-            /*lTable[i] = i;*/
-            /*rTable[i] = i + z;*/
             if(z > 0){
-                lt = i; /* update the left position of the current z-box*/
-                rt = i+z-1; /* update the right position of the current z-box*/
+                l = i; /* update the left position of the current z-box*/
+                r = i+z-1; /* update the right position of the current z-box*/
             }
         }
         /* case 2: i is inside a zbox*/
         else{
-            /*k = i - lTable[i-1];*/
-            /*betaSize = rTable[i-1]-i+1;*/
-            k = i - lt;
-            betaSize = rt - i +1;
+            k = i - l;
+            betaSize = r - i +1;
             /* case 2a*/
             if((*zTable)[k] < betaSize){
                 /* inside a z-box and smaller than its corresponding substring: no need to update lt and rt*/
                 (*zTable)[i] = (*zTable)[k];
-                /*lTable[i] = lTable[i-1];*/
-                /*rTable[i] = rTable[i-1];*/
             }
             /* case 2b*/
             else{
                 /* inside a z-box and larger than its corresponding substring: find how large and update lt and rt*/
-                z = rt+1;
+                z = r+1;
                 while(z < patternSize && pattern[z] == pattern[z-i]){
                     z++;
                 }
                 (*zTable)[i] = z-i;
-                lt = i;
-                rt = z-1;
-                /*z = FindZValue(pattern, patternSize, rTable[i-1]); zTable[i] = z; lTable[i] = i; rTable[i] = i + z;*/
+                l = i;
+                r = z-1;
             }
         }
     }
-
-    free(lTable);
-    lTable = NULL;
-    free(rTable);
-    rTable = NULL;
-
-
 }
 
 int GetIndexFromChar(char c){
-    /*Given a char, returns its index at the bad character rule table*/
-    
+    /*Given a char, returns its index at the bad character rule table*/   
     int index = -1;
-    
     switch (c)
     {
     case (char) 'A':
@@ -365,11 +331,10 @@ int GetIndexFromChar(char c){
         printf("Character %c is not valid", c);
         break;
     }
-
     return index;
 }
 
-void PreprocessPattern(char* pattern, int patternSize, int ***badCharExtendedTable, int** badCharTable, int** L1Table, int** L2Table, int **lTable){
+void PreprocessPattern(char* pattern, int patternSize, int** badCharTable, int** LTable, int** LPrimeTable, int **lPrimeTable){
     
     char* reversedPattern = malloc(patternSize*sizeof(int));
     int* ZTable = malloc(patternSize*sizeof(int)); /* to store the z values of the reversed pattern */
@@ -381,7 +346,6 @@ void PreprocessPattern(char* pattern, int patternSize, int ***badCharExtendedTab
 
     /* initialize the bad character table */
     for(i = 0; i < AlphabetSize; i++){
-        /*badCharExtendedTable[i] = malloc((patternSize+1) * sizeof(badCharTable[0]));*/
         nCharOcc[i] = 0;
         (*badCharTable)[i] = -1;
     }
@@ -389,15 +353,10 @@ void PreprocessPattern(char* pattern, int patternSize, int ***badCharExtendedTab
     /* fill the bad character table and save the reversed pattern */
     for(i = patternSize-1; i>= 0; i--){
         charIndex = GetIndexFromChar(pattern[i]);
-        /*badCharExtendedTable[charIndex][nCharOcc[charIndex]] = i;*/
-        /*nCharOcc[charIndex]++; *//* update the number of occurrences of char in the pattern*/ 
         reversedPattern[patternSize-i-1] = pattern[i]; /* save the reversed pattern */
         if((*badCharTable)[charIndex] < i){
             (*badCharTable)[charIndex] = i;
         }
-    }
-    for(i = 0; i < 0; i++){
-        (*badCharExtendedTable)[i][nCharOcc[i]] = -1; /* list of char occurrences' terminator */
     }
 
     /* find the Z values of the reversed pattern and fill the n table accordingly */
@@ -405,35 +364,36 @@ void PreprocessPattern(char* pattern, int patternSize, int ***badCharExtendedTab
 
     for(i = 0; i < patternSize; i++){
         NTable[i] = ZTable[patternSize-1-i]; /* N_j(P) = Z_{n-1-j}(P^r) */
-        (*L1Table)[i] = 0; /* initialize L1Table*/
-        (*L2Table)[i] = 0;
+        (*LTable)[i] = 0; /* initialize big L array */
+        (*LPrimeTable)[i] = 0; /* initialize big L prime array */
+        (*lPrimeTable)[i] = 0; /* initialize small l prime array */
     }
     NTable[patternSize-1] = patternSize;
 
     /* fill the L2 and l tables*/
     for(j = 0; j < patternSize-1; j++){
         i = patternSize - NTable[j];  
-        (*L2Table)[i] = j;
+        if( i < patternSize)
+            (*LPrimeTable)[i] = j+1;
     }
 
     for(i = 0; i < patternSize; i++){
-        (*lTable)[i] = 0;
-        for(j = patternSize-i; j>= 0; j--){
-            if(NTable[j] == j+1){
-                (*lTable)[i] = j;
-                break;
-            }
+        if(NTable[i] == i+1){
+            (*lPrimeTable)[patternSize-i-1] = i+1;
+        }
+    }
+    for(i = patternSize-2; i>= 0; i--){
+        if((*lPrimeTable)[i] == 0){
+            (*lPrimeTable)[i] = (*lPrimeTable)[i+1];
         }
     }
 
-    
 
     /* fill the L1Table*/
-    (*L1Table)[1] = (*L2Table)[1];
+    (*LTable)[1] = (*LPrimeTable)[1];
     for(i = 2; i < patternSize;i++){
-        (*L1Table)[i] = max((*L1Table)[i-1], (*L2Table)[i]);
+        (*LTable)[i] = max((*LTable)[i-1], (*LPrimeTable)[i]);
     }
-
 
     free(ZTable);
     ZTable = NULL;
@@ -441,23 +401,6 @@ void PreprocessPattern(char* pattern, int patternSize, int ***badCharExtendedTab
     NTable = NULL;
     free(reversedPattern);
     reversedPattern = NULL;
-}
-
-int ExtendedBadCharacterRule(int** badCharTable, char characterInText, int positionInPattern){
-
-    int charIndex = GetIndexFromChar(characterInText);
-    int i = 0;
-    int charRightMostPosition = 1;
-
-    /*assuming there is a negative terminator after the last position of the character in the pattern*/
-    while(badCharTable[charIndex][i] >= 0 && badCharTable[charIndex][i] >= positionInPattern){
-        i++;
-    }
-    if(badCharTable[charIndex][i] >= 0 && badCharTable[charIndex][i] < positionInPattern){
-        charRightMostPosition = badCharTable[charIndex][i-1];
-    }
-
-    return charRightMostPosition;
 }
 
 int BadCharacterRule(int* badCharTable, char characterInText, int positionInPattern){
@@ -474,20 +417,17 @@ void BoyerMoore(char* text, int textSize, char* pattern, int patternSize){
     int *posStore = malloc(posStoreSize*sizeof(int)); /* to store the occurrences of pattern in text*/ 
     int posCounter = 0;
 
-    int **badCharExtendedTable = (int**) malloc(AlphabetSize * sizeof(*badCharExtendedTable)); /* for the bad character rule */
-    int *badCharTable = malloc(AlphabetSize*sizeof(int));
+    int *badCharTable = malloc(AlphabetSize*sizeof(int)); /* for the bad character rule */
     int *L1Table = malloc(patternSize*sizeof(int)); /* for the (strong) good suffix rule*/
     int *L2Table = malloc(patternSize*sizeof(int)); /* for the good suffix rule */
-    int *lTable = malloc(patternSize*sizeof(int));
-    int k;
-    int h;
-    int i;
+    int *lTable = malloc(patternSize*sizeof(int));  /* for the good suffix rule and match skip */
+    int k; /* alignment position */
+    int h; /* position in text */
+    int i; /* position in pattern */
     int nComparisons = 0;
     int shift = 0;
 
-
-    PreprocessPattern(pattern, patternSize, &badCharExtendedTable, &badCharTable, &L1Table, &L2Table, &lTable);
-
+    PreprocessPattern(pattern, patternSize, &badCharTable, &L1Table, &L2Table, &lTable);
 
     k = patternSize-1;
     while(k < textSize){
@@ -501,19 +441,18 @@ void BoyerMoore(char* text, int textSize, char* pattern, int patternSize){
         if( i == -1){
             posCounter++;
             if(posCounter == posStoreSize){
-                /* grow the positions storage*/
+                /* grow the positions' storage*/
                 posStoreSize *= 2;
                 posStore = realloc(posStore, posStoreSize*sizeof(int));
             }
 
             /* save position */
             posStore[posCounter-1] = k-patternSize+1;
-            /* update p */
-            k += patternSize-lTable[1]; /* shift k*/ 
+            /* update k */
+            k += patternSize-lTable[1];
         }else{
             /* mismatch */
-
-            shift = max(BadCharacterRule(badCharTable, text[h], i), GoodSuffixRule(L2Table, lTable, i, patternSize ));
+            shift = max(BadCharacterRule(badCharTable, text[h], i), GoodSuffixRule(L2Table, lTable, i, patternSize));
             if(shift < 1)
                 shift = 1;
             k += shift; /*, GoodSuffixRule(L2Table, lTable, k)));*/
@@ -531,13 +470,6 @@ void BoyerMoore(char* text, int textSize, char* pattern, int patternSize){
     posStore = NULL;    
 
 
-    for(i = 0; i < AlphabetSize; i++){
-        free(badCharExtendedTable[i]);
-        badCharExtendedTable[i] = NULL;
-    }
-
-    free(badCharExtendedTable);
-    badCharExtendedTable = NULL;
     free(badCharTable);
     badCharTable = NULL;
     free(L1Table);
@@ -563,8 +495,5 @@ int GoodSuffixRule(int* LTable, int* lTable, int mismatchPos, int patternSize){
             shift = patternSize - lTable[mismatchPos+1];
         }
     }
-
-
     return shift;
-
 }
