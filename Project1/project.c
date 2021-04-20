@@ -133,51 +133,30 @@ bool EqualCharQ(char p, char t, int* nComparisons){
 
 void NaiveAlgorithm(char* text, int textSize, char* pattern, int patternSize){
 
-    int posStoreSize = 2; /* size of positions storage */
-    int *posStore = malloc(posStoreSize*sizeof(int)); /* to store the positions where the pattern occurs in text*/ 
     int t; /* text iterator */
     int p; /* pattern iterator */
-    int matchCounter; /* count occurrences of pattern in text*/
-    int i; /* position counter iterator */
 
     if(textSize < patternSize || textSize < 1 || patternSize < 1){
         printf("\n"); /* the pattern never occurs on the text*/
-        free(posStore);
-        posStore = NULL;
         return;
     }
 
-    matchCounter = 0;
     p = 0;   
     for(t = 0; t+p < textSize; t++){
         
         while(p < patternSize && t+p < textSize && pattern[p] == text[t+p]){
             p++;
-        }
-        
-        /* whenever p reaches the patternSize, an occurrence of the pattern has been found at position t of the text */
+        }     
+        /* whenever p reaches patternSize, an occurrence of the pattern has been found at position t of the text */
         if(p == patternSize){
-            matchCounter++;
-            if(posStoreSize == matchCounter){
-                posStoreSize *= 2;
-                posStore = realloc(posStore, posStoreSize*sizeof(int));
-            }
-            posStore[matchCounter-1] = t;
+            printf("%d ", t);
             p = 0;
         }
         else if(pattern[p] != text[t+p]){
             p = 0;
         }
     }
-
-    for(i = 0; i < matchCounter; i++){
-        printf("%d ", posStore[i]);
-    }
-
     printf("\n");
-
-    free(posStore);
-    posStore = NULL;
 }
 
 void ComputePrefixFunction(char* pattern, int patternSize, int** prefix){
@@ -202,59 +181,41 @@ void ComputePrefixFunction(char* pattern, int patternSize, int** prefix){
 
 void KnuthMorrisPratt(char* text, int textSize, char* pattern, int patternSize, int* prefix){
 
-    int posStoreSize = 2; /* size of the array of the occurrences' positions */
-    int *posStore = malloc(posStoreSize*sizeof(int)); /* to store the occurrences of pattern in text*/ 
     int t; /* position in text */
     int p; /* position in pattern */
-    int i; /* iterator of positions list */ 
-    int posCounter = 0; /* number of matches */
     int nComparisons = 0; /* number of comparisons */
 
     if(textSize < patternSize || textSize < 1 || patternSize < 1){
         printf("\n"); /* the pattern never occurs on the text*/
         printf("0 \n"); /* 0 comparisons */
-        free(posStore);
-        posStore = NULL;
         return;
     }
 
-    p = -1;
+    p = 0;
     for(t = 0; t < textSize; t++){
 
-        while(p >= 0 && !EqualCharQ(pattern[p+1], text[t], &nComparisons)){
-            p = prefix[p]-1;
+        while(p > 0 && !EqualCharQ(pattern[p], text[t], &nComparisons)){
+            p = prefix[p-1];
         }
 
-        if (EqualCharQ(pattern[p+1],text[t], &nComparisons)){
+        if(EqualCharQ(pattern[p], text[t], &nComparisons)){
             p++;
         }
-        /* found a match */
-        if(p+1 == patternSize){
-            posCounter++;
-            if(posCounter == posStoreSize){
-                /* grow the positions storage*/
-                posStoreSize *= 2;
-                posStore = realloc(posStore, posStoreSize*sizeof(int));
-            }
-            /* save position */
-            posStore[posCounter-1] = t-p;
 
+        /* found a match */
+        if(p == patternSize){
+            /* print occurrence position */
+            printf("%d ", t-p+1);
             /* update p */
-            p = prefix[p]-1;
+            p = prefix[p-1];
             
         }
     }
+    printf("\n");
     /* end of text */
    
-    /* print positions and number of comparisons*/
-    for(i = 0; i < posCounter; i++){
-        printf("%d ", posStore[i]);
-    }
-    printf("\n");
-    printf("%d \n", nComparisons);
-
-    free(posStore);
-    posStore = NULL;       
+    /* print number of comparisons*/
+    printf("%d \n", nComparisons);     
 }
 
 void ZAlgorithm(char* pattern, int patternSize, int** zTable){
@@ -338,25 +299,23 @@ void PreprocessPattern(char* pattern, int patternSize, int** badCharTable, int**
     
     char* reversedPattern = malloc(patternSize*sizeof(int));
     int* ZTable = malloc(patternSize*sizeof(int)); /* to store the z values of the reversed pattern */
-    int* NTable = malloc(patternSize*sizeof(int)); /* position i stores the length of the longest suffix of the substring Pattern[0...i] that is alsi a suffix of the full string */
-    int nCharOcc[AlphabetSize]; /* to register the number of occurrences of a character in the pattern */
+    int* NTable = malloc(patternSize*sizeof(int)); /* position i stores the length of the longest suffix of the substring Pattern[0...i] that is also a suffix of the full string */
     int i;
     int j;
     int charIndex; 
 
     /* initialize the bad character table */
     for(i = 0; i < AlphabetSize; i++){
-        nCharOcc[i] = 0;
         (*badCharTable)[i] = -1;
     }
 
     /* fill the bad character table and save the reversed pattern */
     for(i = patternSize-1; i>= 0; i--){
         charIndex = GetIndexFromChar(pattern[i]);
-        reversedPattern[patternSize-i-1] = pattern[i]; /* save the reversed pattern */
         if((*badCharTable)[charIndex] < i){
             (*badCharTable)[charIndex] = i;
         }
+        reversedPattern[patternSize-i-1] = pattern[i]; /* save the reversed pattern */
     }
 
     /* find the Z values of the reversed pattern and fill the n table accordingly */
@@ -413,10 +372,6 @@ int BadCharacterRule(int* badCharTable, char characterInText, int positionInPatt
 
 void BoyerMoore(char* text, int textSize, char* pattern, int patternSize){
 
-    int posStoreSize = 2; /* size of the array of the occurrences' positions */
-    int *posStore = malloc(posStoreSize*sizeof(int)); /* to store the occurrences of pattern in text*/ 
-    int posCounter = 0;
-
     int *badCharTable = malloc(AlphabetSize*sizeof(int)); /* for the bad character rule */
     int *L1Table = malloc(patternSize*sizeof(int)); /* for the (strong) good suffix rule*/
     int *L2Table = malloc(patternSize*sizeof(int)); /* for the good suffix rule */
@@ -439,15 +394,8 @@ void BoyerMoore(char* text, int textSize, char* pattern, int patternSize){
         }
         /* found an occurrence */
         if( i == -1){
-            posCounter++;
-            if(posCounter == posStoreSize){
-                /* grow the positions' storage*/
-                posStoreSize *= 2;
-                posStore = realloc(posStore, posStoreSize*sizeof(int));
-            }
-
-            /* save position */
-            posStore[posCounter-1] = k-patternSize+1;
+            /* print position */
+            printf("%d ", k-patternSize+1);
             /* update k */
             k += patternSize-lTable[1];
         }else{
@@ -458,17 +406,9 @@ void BoyerMoore(char* text, int textSize, char* pattern, int patternSize){
             k += shift; /*, GoodSuffixRule(L2Table, lTable, k)));*/
         }
     }
-    
-    /* print positions and number of comparisons*/
-    for(i = 0; i < posCounter; i++){
-        printf("%d ", posStore[i]);
-    }
     printf("\n");
+    /* print number of comparisons*/
     printf("%d \n", nComparisons);
-
-    free(posStore);
-    posStore = NULL;    
-
 
     free(badCharTable);
     badCharTable = NULL;
@@ -481,18 +421,18 @@ void BoyerMoore(char* text, int textSize, char* pattern, int patternSize){
 }
 
 
-int GoodSuffixRule(int* LTable, int* lTable, int mismatchPos, int patternSize){
+int GoodSuffixRule(int* LPrimeTable, int* lPrimeTable, int mismatchPos, int patternSize){
 
     int shift = 1;
 
     if(mismatchPos == patternSize-1){
-        return 1;
+        return 0;
     }
     else{
-        if(LTable[mismatchPos+1] > 0){
-            shift = patternSize - LTable[mismatchPos+1];
+        if(LPrimeTable[mismatchPos+1] > 0){
+            shift = patternSize - LPrimeTable[mismatchPos+1];
         }else{
-            shift = patternSize - lTable[mismatchPos+1];
+            shift = patternSize - lPrimeTable[mismatchPos+1];
         }
     }
     return shift;
