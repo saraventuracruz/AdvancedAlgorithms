@@ -57,6 +57,7 @@ int main(){
         if(isReadText){
 
             free(text);
+            text = NULL;
             textSize = ReadLine(stdin, text); /* allocating memory here! */
             /*printf("Read text: ");*/
             /*printf("%s\n", text);*/
@@ -65,6 +66,7 @@ int main(){
         if(isReadPattern){
 
             free(pattern);
+            pattern = NULL;
             patternSize = ReadLine(stdin, pattern); /* allocating memory here! */
 
             /*printf("Read pattern: ");*/
@@ -75,6 +77,7 @@ int main(){
             else if (readChar == 'K'){
                 /*freeDynArray(&prefix);*/
                 free(prefix);
+                prefix = NULL;
                 ComputePrefixFunction(pattern, patternSize, prefix);
                 KnuthMorrisPratt(text, textSize, pattern, patternSize, prefix);
             }
@@ -90,7 +93,7 @@ int main(){
     }
 
     free(text);
-    text = NULL
+    text = NULL;
     free(pattern);
     pattern = NULL;
     free(prefix);
@@ -399,6 +402,7 @@ void PreprocessPattern(char* pattern, int patternSize, int **badCharExtendedTabl
 
     /* fill the bad character table and save the reversed pattern */
     for(i = patternSize-1; i>= 0; i--){
+        printf("c: %d ", pattern[i]);
         charIndex = GetIndexFromChar(pattern[i]);
         badCharExtendedTable[charIndex][nCharOcc[charIndex]] = i;
         nCharOcc[charIndex]++; /* update the number of occurrences of char in the pattern*/
@@ -457,8 +461,11 @@ void PreprocessPattern(char* pattern, int patternSize, int **badCharExtendedTabl
 
 
     free(ZTable);
+    ZTable = NULL;
     free(NTable);
+    NTable = NULL;
     free(reversedPattern);
+    reversedPattern = NULL;
 }
 
 int ExtendedBadCharacterRule(int** badCharTable, char characterInText, int positionInPattern){
@@ -552,11 +559,17 @@ void BoyerMoore(char* text, int textSize, char* pattern, int patternSize){
 
     for(i = 0; i < AlphabetSize; i++){
         free(badCharExtendedTable[i]);
+        badCharExtendedTable[i] = NULL;
     }
 
     free(badCharExtendedTable);
+    badCharExtendedTable = NULL;
     free(badCharTable);
+    badCharTable = NULL;
     free(L1Table);
+    L1Table = NULL;
     free(L2Table);
+    L2Table = NULL;
     free(lTable);
+    lTable = NULL;
 }
