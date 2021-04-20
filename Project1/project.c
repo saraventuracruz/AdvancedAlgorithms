@@ -43,8 +43,6 @@ int main(){
     int textSize = 0;
     int patternSize = 0;  
 
-    int* ZTable = malloc(2*sizeof(int));
-
     char readChar = getchar(); /* read input character by character */
     while(readChar != EOF){
 
@@ -92,8 +90,12 @@ int main(){
     }
 
     free(text);
+    text = NULL
     free(pattern);
+    pattern = NULL;
     free(prefix);
+    prefix = NULL;
+ 
 
 
     return 0;
