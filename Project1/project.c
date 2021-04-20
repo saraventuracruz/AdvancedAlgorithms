@@ -23,9 +23,12 @@ void ComputePrefixFunction(char*, int, int*);
 void BoyerMoore(char*, int, char*, int);
 int ExtendedBadCharacterRule(int**, char, int);
 int BadCharacterRule(int*, char, int);
+int GoodSuffixRule(int*, int*, int, int);
+
  /* preprocessing steps of the boyer moore algorithm */
 void ZAlgorithm(char*, int, int*);
 void PreprocessPattern(char*, int, int**, int*, int*, int*, int*);
+
 
 
 /* auxiliary method to get the index of a char of the alphabet (considering the fixed alphabet: {A, C, T, G}) */
@@ -331,12 +334,6 @@ void ZAlgorithm(char* pattern, int patternSize, int* zTable){
         }
     }
 
-    printf("\nZTable:");
-    for(i = 0; i<patternSize; i++){
-        printf(" %d ", zTable[i]);
-    }
-    printf("\n");
-
     free(lTable);
     lTable = NULL;
     free(rTable);
@@ -375,58 +372,63 @@ int GetIndexFromChar(char c){
 void PreprocessPattern(char* pattern, int patternSize, int **badCharExtendedTable, int* badCharTable, int* L1Table, int* L2Table, int *lTable){
     
     char* reversedPattern = malloc(patternSize*sizeof(int));
-    int* ZTable = malloc(patternSize*sizeof(int));
-    int* NTable = malloc(patternSize*sizeof(int));
+    int* ZTable = malloc(patternSize*sizeof(int)); /* to store the z values of the reversed pattern */
+    int* NTable = malloc(patternSize*sizeof(int)); /* position i stores the length of the longest suffix of the substring Pattern[0...i] that is alsi a suffix of the full string */
     int nCharOcc[AlphabetSize]; /* to register the number of occurrences of a character in the pattern */
     int i;
     int j;
     int charIndex; 
-    int maxI; /* to fill l values*/
+    int maxJ; /* to fill l values*/
     int k;
 
     /* initialize the bad character table */
     for(i = 0; i < AlphabetSize; i++){
-        badCharExtendedTable[i] = malloc((patternSize+1) * sizeof(badCharTable[0]));
+        /*badCharExtendedTable[i] = malloc((patternSize+1) * sizeof(badCharTable[0]));*/
         nCharOcc[i] = 0;
         badCharTable[i] = -1;
     }
 
     /* fill the bad character table and save the reversed pattern */
     for(i = patternSize-1; i>= 0; i--){
-        printf("c: %c ", pattern[i]);
         charIndex = GetIndexFromChar(pattern[i]);
-        badCharExtendedTable[charIndex][nCharOcc[charIndex]] = i;
-        nCharOcc[charIndex]++; /* update the number of occurrences of char in the pattern*/
+        /*badCharExtendedTable[charIndex][nCharOcc[charIndex]] = i;*/
+        /*nCharOcc[charIndex]++; *//* update the number of occurrences of char in the pattern*/ 
         reversedPattern[patternSize-i-1] = pattern[i]; /* save the reversed pattern */
         if(badCharTable[charIndex] < i){
             badCharTable[charIndex] = i;
         }
     }
-    for(i = 0; i < AlphabetSize; i++){
+    for(i = 0; i < 0; i++){
         badCharExtendedTable[i][nCharOcc[i]] = -1; /* list of char occurrences' terminator */
     }
 
     /* find the Z values of the reversed pattern and fill the n table accordingly */
     ZAlgorithm(reversedPattern, patternSize, ZTable);
-    NTable[patternSize-1] = 0;
+
     L1Table[0] = 0;
     L2Table[0] = 0;
-    for(i = 1; i < patternSize; i++){
+    for(i = 0; i < patternSize; i++){
         NTable[i] = ZTable[patternSize-1-i]; /* N_j(P) = Z_{n-1-j}(P^r) */
         L1Table[i] = 0; /* initialize L1Table*/
         L2Table[i] = 0;
     }
+    NTable[patternSize-1] = patternSize;
 
     /* fill the L2 and l tables*/
-    maxI = 0;
-    k = 0;
     for(j = 0; j < patternSize-1; j++){
         i = patternSize - NTable[j];  
         L2Table[i] = j;
-        if(k <= patternSize - j && k == NTable[k]){
-            maxI = max(maxI, k);
+    }
+
+    maxJ = 0;
+    for(i = 0; i < patternSize; i++){
+        lTable[i] = 0;
+        for(j = patternSize-i; j>= 0; j--){
+            if(NTable[j] == j+1){
+                lTable[i] = j;
+                break;
+            }
         }
-        lTable[j] = maxI;
     }
 
     
@@ -435,19 +437,6 @@ void PreprocessPattern(char* pattern, int patternSize, int **badCharExtendedTabl
     L1Table[1] = L2Table[1];
     for(i = 2; i < patternSize;i++){
         L1Table[i] = max(L1Table[i-1], L2Table[i]);
-    }
-
-    printf("\nL1Table:");
-    for(i = 0; i<patternSize; i++){
-        printf(" %d", L1Table[i]);
-    }
-    printf("\nL2Table:");
-    for(i = 0; i<patternSize; i++){
-        printf(" %d", L2Table[i]);
-    }
-    printf("\nlTable:");
-    for(i = 0; i<patternSize; i++){
-        printf(" %d", lTable[i]);
     }
 
 
@@ -504,12 +493,6 @@ void BoyerMoore(char* text, int textSize, char* pattern, int patternSize){
 
     PreprocessPattern(pattern, patternSize, badCharExtendedTable, badCharTable, L1Table, L2Table, lTable);
 
-    for(i = 0; i<AlphabetSize; i++){
-        printf("\ni: %d", badCharTable[i]);
-    }
-    printf("\n");
-    printf("0 \n");
-
 
     k = patternSize-1;
     while(k < textSize){
@@ -519,6 +502,7 @@ void BoyerMoore(char* text, int textSize, char* pattern, int patternSize){
             i--;
             h--;
         }
+        /* found an occurrence */
         if( i == -1){
             posCounter++;
             if(posCounter == posStoreSize){
@@ -528,15 +512,15 @@ void BoyerMoore(char* text, int textSize, char* pattern, int patternSize){
             }
 
             /* save position */
-            posStore[posCounter-1] = k;
+            posStore[posCounter-1] = k-patternSize+1;
             /* update p */
-            k = k+patternSize-lTable[1];
+            k += patternSize-lTable[1]; /* shift k*/ 
         }else{
-            k += max(1,max(BadCharacterRule(badCharTable, text[h], k), goodSuffixRule)); /*, GoodSuffixRule(L2Table, lTable, k)));*/
+            /* mismatch */
+            k += max(1,max(BadCharacterRule(badCharTable, text[h], i), GoodSuffixRule(L2Table, lTable, i, patternSize ))); /*, GoodSuffixRule(L2Table, lTable, k)));*/
         }
     }
     
-
     /* print positions and number of comparisons*/
     for(i = 0; i < posCounter; i++){
         printf("%d ", posStore[i]);
@@ -563,4 +547,25 @@ void BoyerMoore(char* text, int textSize, char* pattern, int patternSize){
     L2Table = NULL;
     free(lTable);
     lTable = NULL;
+}
+
+
+int GoodSuffixRule(int* LTable, int* lTable, int mismatchPos, int patternSize){
+
+    int shift = 1;
+
+    if(mismatchPos == patternSize-1){
+        return 1;
+    }
+    else{
+        if(LTable[mismatchPos+1] > 0){
+            shift = patternSize - LTable[mismatchPos+1];
+        }else{
+            shift = patternSize - lTable[mismatchPos+1];
+        }
+    }
+
+
+    return shift;
+
 }
