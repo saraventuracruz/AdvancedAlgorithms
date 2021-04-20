@@ -56,8 +56,6 @@ int main(){
 
         if(isReadText){
 
-            free(text);
-            text = NULL;
             textSize = ReadLine(stdin, text); /* allocating memory here! */
             /*printf("Read text: ");*/
             /*printf("%s\n", text);*/
@@ -65,8 +63,6 @@ int main(){
 
         if(isReadPattern){
 
-            free(pattern);
-            pattern = NULL;
             patternSize = ReadLine(stdin, pattern); /* allocating memory here! */
 
             /*printf("Read pattern: ");*/
@@ -75,9 +71,6 @@ int main(){
             if(readChar == 'N')
                 NaiveAlgorithm(text, textSize, pattern, patternSize);
             else if (readChar == 'K'){
-                /*freeDynArray(&prefix);*/
-                free(prefix);
-                prefix = NULL;
                 ComputePrefixFunction(pattern, patternSize, prefix);
                 KnuthMorrisPratt(text, textSize, pattern, patternSize, prefix);
             }
@@ -99,8 +92,6 @@ int main(){
     free(prefix);
     prefix = NULL;
  
-
-
     return 0;
 }
 
@@ -110,7 +101,7 @@ int ReadLine(FILE *inputFile, char* text){
     int readChar = getchar(); /* white space */
     
     int textSize = 2; /* to keep track of the size of *text*, which is a dynamic array of chars */
-    text = malloc(textSize*sizeof(char)); /* alloc memory to save the read chars */
+    text = realloc(text,textSize*sizeof(char)); /* realloc memory to save the read chars */
     
     readChar = getchar();
     if(readChar == EOF)
@@ -191,7 +182,7 @@ void ComputePrefixFunction(char* pattern, int patternSize, int* prefix){
 
     int q = 1; /* point to the second position of the pattern: propper suffix*/
     int k = -1; /* point to the position "right before" the pattern */
-    prefix = malloc(patternSize*sizeof(int));
+    prefix = realloc(prefix, patternSize*sizeof(int));
 
     prefix[0] = 0;
     for(q = 1; q < patternSize; q++){
@@ -402,7 +393,7 @@ void PreprocessPattern(char* pattern, int patternSize, int **badCharExtendedTabl
 
     /* fill the bad character table and save the reversed pattern */
     for(i = patternSize-1; i>= 0; i--){
-        printf("c: %d ", pattern[i]);
+        printf("c: %c ", pattern[i]);
         charIndex = GetIndexFromChar(pattern[i]);
         badCharExtendedTable[charIndex][nCharOcc[charIndex]] = i;
         nCharOcc[charIndex]++; /* update the number of occurrences of char in the pattern*/
