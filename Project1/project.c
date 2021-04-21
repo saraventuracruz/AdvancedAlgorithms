@@ -21,7 +21,7 @@ void ComputePrefixFunction(char*, int, int**);
 
 /* implementation of the boyer moore algorithm */
 void BoyerMoore(char*, int, char*, int);
-int BadCharacterRule(int*, char, int);
+int BadCharacterRule(int*, char, int, int);
 int GoodSuffixRule(int*, int*, int, int);
 
  /* preprocessing steps of the boyer moore algorithm */
@@ -297,6 +297,8 @@ int GetIndexFromChar(char c){
 
 void PreprocessPattern(char* pattern, int patternSize, int** badCharTable, int** LTable, int** LPrimeTable, int **lPrimeTable){
     
+
+
     char* reversedPattern = malloc(patternSize*sizeof(int));
     int* ZTable = malloc(patternSize*sizeof(int)); /* to store the z values of the reversed pattern */
     int* NTable = malloc(patternSize*sizeof(int)); /* position i stores the length of the longest suffix of the substring Pattern[0...i] that is also a suffix of the full string */
@@ -329,31 +331,40 @@ void PreprocessPattern(char* pattern, int patternSize, int** badCharTable, int**
     }
     NTable[patternSize-1] = patternSize;
 
-    /* fill the L2 and l tables*/
+    /* fill the LPrime table */
+    /* algorithm "Z-based Boyer-Moore" from Gusfield, using theorem 2.2.2*/
     for(j = 0; j < patternSize-1; j++){
         i = patternSize - NTable[j];  
-        if( i < patternSize)
-            (*LPrimeTable)[i] = j+1;
+        if( i < patternSize){
+        /* since the positions start at 0, we must add 1, */
+        /* so that we can use the good suffix rule just as stated in Gusfield */
+            (*LPrimeTable)[i] = j+1; 
+        }
+
     }
 
+    /* fill the lPrime table */
+    /* following threorem 2.2.4 (Gusfield): l'(i) = largest j<= n-i+1 such that Nj = j*/
+        /* since positions start at 0, the condition is Nj = j+1*/
     for(i = 0; i < patternSize; i++){
         if(NTable[i] == i+1){
+            /* length, hence i+1*/
             (*lPrimeTable)[patternSize-i-1] = i+1;
         }
     }
+    /* update the values that did not match the condition Nj = j+1 precisely at n-i+1*/
     for(i = patternSize-2; i>= 0; i--){
         if((*lPrimeTable)[i] == 0){
             (*lPrimeTable)[i] = (*lPrimeTable)[i+1];
         }
     }
 
-
-    /* fill the L1Table*/
+    /* fill the LTable*/
+    /* algorithm "Z-based Boyer-Moore" from Gusfield, using theorem 2.2.2*/
     (*LTable)[1] = (*LPrimeTable)[1];
     for(i = 2; i < patternSize;i++){
         (*LTable)[i] = max((*LTable)[i-1], (*LPrimeTable)[i]);
     }
-
     free(ZTable);
     ZTable = NULL;
     free(NTable);
@@ -362,65 +373,13 @@ void PreprocessPattern(char* pattern, int patternSize, int** badCharTable, int**
     reversedPattern = NULL;
 }
 
-int BadCharacterRule(int* badCharTable, char characterInText, int positionInPattern){
+int BadCharacterRule(int* badCharTable, char characterInText, int positionInPattern, int patternSize){
     int charIndex = GetIndexFromChar(characterInText);
     if(badCharTable[charIndex] < 0)
-        return 1;
+        return patternSize;
     else 
         return positionInPattern - badCharTable[charIndex];
 }
-
-void BoyerMoore(char* text, int textSize, char* pattern, int patternSize){
-
-    int *badCharTable = malloc(AlphabetSize*sizeof(int)); /* for the bad character rule */
-    int *L1Table = malloc(patternSize*sizeof(int)); /* for the (strong) good suffix rule*/
-    int *L2Table = malloc(patternSize*sizeof(int)); /* for the good suffix rule */
-    int *lTable = malloc(patternSize*sizeof(int));  /* for the good suffix rule and match skip */
-    int k; /* alignment position */
-    int h; /* position in text */
-    int i; /* position in pattern */
-    int nComparisons = 0;
-    int shift = 0;
-
-    PreprocessPattern(pattern, patternSize, &badCharTable, &L1Table, &L2Table, &lTable);
-
-    k = patternSize-1;
-    while(k < textSize){
-        i = patternSize-1;
-        h = k;
-        while(i >= 0 && EqualCharQ(pattern[i], text[h], &nComparisons)){
-            i--;
-            h--;
-        }
-        /* found an occurrence */
-        if( i == -1){
-            /* print position */
-            printf("%d ", k-patternSize+1);
-            /* update k */
-            k += patternSize-lTable[1];
-        }else{
-            /* mismatch */
-            shift = max(BadCharacterRule(badCharTable, text[h], i), GoodSuffixRule(L2Table, lTable, i, patternSize));
-            if(shift < 1)
-                shift = 1;
-            k += shift; /*, GoodSuffixRule(L2Table, lTable, k)));*/
-        }
-    }
-    printf("\n");
-    /* print number of comparisons*/
-    printf("%d \n", nComparisons);
-
-    free(badCharTable);
-    badCharTable = NULL;
-    free(L1Table);
-    L1Table = NULL;
-    free(L2Table);
-    L2Table = NULL;
-    free(lTable);
-    lTable = NULL;
-}
-
-
 int GoodSuffixRule(int* LPrimeTable, int* lPrimeTable, int mismatchPos, int patternSize){
 
     int shift = 1;
@@ -437,3 +396,56 @@ int GoodSuffixRule(int* LPrimeTable, int* lPrimeTable, int mismatchPos, int patt
     }
     return shift;
 }
+
+void BoyerMoore(char* text, int textSize, char* pattern, int patternSize){
+
+    int *badCharTable = malloc(AlphabetSize*sizeof(int)); /* for the bad character rule */
+    int *LPrimeTable = malloc(patternSize*sizeof(int)); /* for the (strong) good suffix rule*/
+    int *LTable = malloc(patternSize*sizeof(int)); /* for the good suffix rule */
+    int *lPrimeTable = malloc(patternSize*sizeof(int));  /* for the good suffix rule and match skip */
+    int k; /* alignment position */
+    int h; /* position in text */
+    int i; /* position in pattern */
+    int nComparisons = 0;
+    int shift = 0;
+
+    PreprocessPattern(pattern, patternSize, &badCharTable, &LTable, &LPrimeTable, &lPrimeTable);
+
+    k = patternSize-1;
+    while(k < textSize){
+        i = patternSize-1;
+        h = k;
+        while(i >= 0 && EqualCharQ(pattern[i], text[h], &nComparisons)){
+            i--;
+            h--;
+        }
+        /* found an occurrence */
+        if( i == -1){
+            /* print position */
+            printf("%d ", k-patternSize+1);
+            /* update k */
+            k += patternSize-lPrimeTable[1];
+        }else{
+            /* mismatch */
+            shift = max(BadCharacterRule(badCharTable, text[h], i, patternSize), GoodSuffixRule(LPrimeTable, lPrimeTable, i, patternSize));
+            if(shift < 1)
+                shift = 1;
+            k += shift; /*, GoodSuffixRule(L2Table, lTable, k)));*/
+        }
+    }
+    printf("\n");
+    /* print number of comparisons*/
+    printf("%d \n", nComparisons);
+
+    free(badCharTable);
+    badCharTable = NULL;
+    free(LTable);
+    LTable = NULL;
+    free(LPrimeTable);
+    LPrimeTable = NULL;
+    free(lPrimeTable);
+    lPrimeTable = NULL;
+}
+
+
+
