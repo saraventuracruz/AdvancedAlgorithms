@@ -20,7 +20,7 @@ int main(){
         readChar = getchar();
     }       
     printf("\nnumberOfStrings: %d", numberOfStrings);
-    setOfStrings = malloc(numberOfStrings*sizeof(char*));
+    setOfStrings = (char**) malloc(numberOfStrings*sizeof(char*));
     /* read and store each string*/
     for(s = 0; s < numberOfStrings; s++){
         printf("\ns: %d", s);
@@ -32,8 +32,11 @@ int main(){
             readChar = getchar();
         }
         printf("\nStringSize: %d", stringSize);
-        setOfStrings[s] = malloc(stringSize*sizeof(char));
-        for(c = 0; c < stringSize; c++){
+        setOfStrings[s] = (char*) malloc(stringSize*sizeof(char));
+	if(setOfStrings[s] == NULL){
+	  printf("\nerror while allocating memory setOfStrings[%d]", s);
+	}
+	for(c = 0; c < stringSize; c++){
             setOfStrings[s][c] = getchar();
         }
         printf("\nstring: %s", setOfStrings[s]);
