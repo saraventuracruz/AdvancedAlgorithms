@@ -57,7 +57,7 @@ int main(){
     }
     /* read and store each string*/
     for(s = 0; s < numberOfStrings; s++){
-        printf("s: %d\n", s);
+      /* printf("s: %d\n", s);*/
         readChar = getchar();
         stringSize = 0;
         printf("stringSize: %d\n", stringSize);
@@ -68,6 +68,7 @@ int main(){
         }
         printf("StringSize: %d\n", stringSize);
         m += stringSize;
+	stringSizes[s] = stringSize;
         setOfStrings[s] = (char*) malloc(stringSize*sizeof(char));
         if(setOfStrings[s] == NULL){
             /*check whether it was possible to allocate memory*/
@@ -77,7 +78,7 @@ int main(){
         for(c = 0; c < stringSize; c++){
             setOfStrings[s][c] = getchar();
         }
-        printf("string: %s\n", setOfStrings[s]);
+	/* printf("string: %s\n", setOfStrings[s]);*/
         readChar = getchar(); /* new line character */
     }
 
@@ -90,9 +91,13 @@ int main(){
     printf("\n");
 
     /* free memory */
+    printf("m: %d\n", m);
     for(i = 0; i < 2*m+1; i++){
+      if(setOfNodes[i] != NULL){
+	printf("trying to free non existing memory\n");
         free(setOfNodes[i]);
         setOfNodes[i] = NULL;
+      }
     }
     free(setOfNodes);
     setOfNodes = NULL;
@@ -117,8 +122,14 @@ node* BuildSuffixTree(char** setOfStrings, int* stringSizes, int nStrings){
     for(i = 0; i < nStrings; i++){
         m += stringSizes[i];
     }
+    /* initialize tree */
     tree = (node*) malloc((2*m+1)*sizeof(node));
-
+    printf("initializing tree (m: %d)\n", m);
+    for(i = 0; i < 2*m+1; i++){
+      tree[i] = NULL;
+    }
+    printf("\n");
+    
     return tree;
     
 }
