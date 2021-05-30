@@ -2,15 +2,15 @@
 #include <stdlib.h> /* malloc */
 #include <stdbool.h> /* to use booleans */
 
-typedef struct node* node;
+typedef struct node node;
 struct node {
     int Ti;         /**< The value of i in Ti */
     int head;       /**< The path-label start at &(Ti[head]) */
     int sdep;       /**< String-Depth */
-    node child;     /**< Child */
-    node brother;   /**< brother */
-    node slink;     /**< Suffix link */
-    node* hook;     /**< What keeps this linked? */   
+    node* child;     /**< Child */
+    node* brother;   /**< brother */
+    node* slink;     /**< Suffix link */
+    node** hook;     /**< What keeps this linked? */   
     bool sentinelQ; /* whether the node is a sentinel node */
 };
 typedef struct point* point;
@@ -23,8 +23,8 @@ struct point
 
 
 int CharToInt(char); /*convert a char to an int*/
-node* BuildSuffixTree(char**, int*, int);
-node CreateNode();
+node** BuildSuffixTree(char**, int*, int);
+node* CreateNode();
 
 int main(){
 
@@ -40,7 +40,7 @@ int main(){
     int *lcsSizes = NULL; /* to store the longest common substring sizes for each k = 2,...,numberOfStrings */
     int k = 0; /* number of common substrings */
     int i = 0; /* iterator */
-    node *suffixTree = NULL; /* suffix tree as a list of nodes */
+    node **suffixTree = NULL; /* suffix tree as a list of nodes */
 
     while(readChar != '\n'){
         /*read the number of strings and convert it to int*/
@@ -85,7 +85,7 @@ int main(){
     suffixTree = BuildSuffixTree(setOfStrings, stringSizes, numberOfStrings);
 
     /* print output */
-    for(k = 0; k<numberOfStrings-1; k++){
+    for(k = 0; k < numberOfStrings-1; k++){
         printf("%d ", lcsSizes[k]);
     }
     printf("\n");
@@ -117,24 +117,26 @@ int main(){
     lcsSizes = NULL;
 }
 
-node* BuildSuffixTree(char** setOfStrings, int* stringSizes, int nStrings){
+node** BuildSuffixTree(char** setOfStrings, int* stringSizes, int nStrings){
     
     int nNodes = 0; /* to keep track of the number of created nodes (not sure if this is relevant) */
-    node* tree = NULL;
+    node** tree = NULL;
     int m = 0; /* sum of all string sizes */
     int i, j; /* iterators */
 
     
-    node root = NULL;
-    node sentinel = NULL;
-    node new_node = NULL;
+    node* root = NULL;
+    node* sentinel = NULL;
+    node* new_node = NULL;
     
     /* compute the value of m by adding each string size */
     for(i = 0; i < nStrings; i++){
         m += stringSizes[i];
     }
     /* initialize tree */
-    tree = (node*) malloc((2*m+1)*sizeof(node));
+    tree = (node**) malloc((2*m+1)*sizeof(node*));
+    printf("sizeof(node): %lu\n", sizeof(node*));
+    printf("sizeof(tree): %lu\n", sizeof(tree));
     printf("initializing tree (m: %d)\n", m);
     for(i = 0; i < 2*m+1; i++){
       tree[i] = NULL;
@@ -161,9 +163,9 @@ node* BuildSuffixTree(char** setOfStrings, int* stringSizes, int nStrings){
     
 }
 
-node CreateNode(){
+node* CreateNode(){
 
-    node new_node = malloc(sizeof(node));
+    node* new_node = malloc(sizeof(node));
     new_node->Ti = -1;
     new_node->head = -1;
     new_node->sdep = -1;
