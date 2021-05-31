@@ -7,24 +7,41 @@ struct node {
     int Ti;         /**< The value of i in Ti */
     int head;       /**< The path-label start at &(Ti[head]) */
     int sdep;       /**< String-Depth */
-    node* child;     /**< Child */
-    node* brother;   /**< brother */
-    node* slink;     /**< Suffix link */
-    node** hook;     /**< What keeps this linked? */   
+    node* child;    /**< Child */
+    node* brother;  /**< brother */
+    node* slink;    /**< Suffix link */
+    node** hook;    /**< What keeps this linked? */   
     bool sentinelQ; /* whether the node is a sentinel node */
+    bool terminalQ; /* whether the path-label corresponds to a terminal edege (if so, take 1 to string depth)*/
 };
-typedef struct point* point;
+typedef struct point point;
 struct point
 {
-    node a;   /**< node above */
-    node b;   /**< node bellow */
+    node* a;  /**< node above */
+    node* b;  /**< node bellow */
     int s;    /**< String-Depth */ 
 };
 
+typedef struct tree tree;
+struct tree
+{
+    int nNodes; /* to keep track of the number of created nodes (not sure if this is relevant) */
+    node** setOfNodes; /* to save the created nodes */
+};
 
+/* forward declaration */
 int CharToInt(char); /*convert a char to an int*/
-node** BuildSuffixTree(char**, int*, int);
+tree* BuildSuffixTree(char**, int*, int);
 node* CreateNode();
+tree* CreateTree(int);
+void AddNode(tree*, node*);
+node* GetLastNode(tree*);
+bool DescendQ(tree*, point*, char);
+void AddLeaf(tree*, point*, char);
+void Descend(tree*, point*, char);
+
+/* global variables */
+int nNodes = 0; 
 
 int main(){
 
@@ -40,7 +57,7 @@ int main(){
     int *lcsSizes = NULL; /* to store the longest common substring sizes for each k = 2,...,numberOfStrings */
     int k = 0; /* number of common substrings */
     int i = 0; /* iterator */
-    node **suffixTree = NULL; /* suffix tree as a list of nodes */
+    tree *suffixTree = NULL; /* suffix tree as a list of nodes */
 
     while(readChar != '\n'){
         /*read the number of strings and convert it to int*/
@@ -52,7 +69,7 @@ int main(){
     stringSizes = (int *) malloc(numberOfStrings*sizeof(int));
     lcsSizes = (int*) malloc((numberOfStrings-1)*sizeof(int));
     /* initialize lcs size counter as 0*/
-    for(k = 0; k<numberOfStrings-1; k++){
+    for(k = 0; k < numberOfStrings-1; k++){
         lcsSizes[k] = 0;
     }
     /* read and store each string*/
@@ -67,18 +84,20 @@ int main(){
             readChar = getchar();
         }
         printf("StringSize: %d\n", stringSize);
+        stringSize++; /* add \0 to string*/
         m += stringSize;
         stringSizes[s] = stringSize;
         setOfStrings[s] = (char*) malloc(stringSize*sizeof(char));
         if(setOfStrings[s] == NULL){
             /*check whether it was possible to allocate memory*/
-        printf("error while allocating memory setOfStrings[%d]\n", s);
+            printf("error while allocating memory setOfStrings[%d]\n", s);
         }
         /*read each character of the string and store it at the corresponding string entry*/
-        for(c = 0; c < stringSize; c++){
+        for(c = 0; c < stringSize-1; c++){
             setOfStrings[s][c] = getchar();
         }
-	/* printf("string: %s\n", setOfStrings[s]);*/
+        setOfStrings[s][stringSize-1] = '\0'; /* add a terminator */
+	    /* printf("string: %s\n", setOfStrings[s]);*/
         readChar = getchar(); /* new line character */
     }
 
@@ -93,10 +112,10 @@ int main(){
     /* free memory */
     printf("m: %d\n", m);
     for(i = 0; i < 2*m+1; i++){
-      if(suffixTree[i] != NULL){
+      if(suffixTree->setOfNodes[i] != NULL){
 	    printf("trying to free non existing memory\n");
-        free(suffixTree[i]);
-        suffixTree[i] = NULL;
+        free(suffixTree->setOfNodes[i]);
+        suffixTree->setOfNodes[i] = NULL;
       }
     }
     free(suffixTree);
@@ -117,50 +136,58 @@ int main(){
     lcsSizes = NULL;
 }
 
-node** BuildSuffixTree(char** setOfStrings, int* stringSizes, int nStrings){
+tree* BuildSuffixTree(char** setOfStrings, int* stringSizes, int nStrings){
     
-    int nNodes = 0; /* to keep track of the number of created nodes (not sure if this is relevant) */
-    node** tree = NULL;
+    tree* suffixTree = NULL;
     int m = 0; /* sum of all string sizes */
     int i, j; /* iterators */
-
-    
+   
     node* root = NULL;
     node* sentinel = NULL;
     node* new_node = NULL;
+    point* p = malloc(sizeof(point));
     
     /* compute the value of m by adding each string size */
     for(i = 0; i < nStrings; i++){
         m += stringSizes[i];
     }
     /* initialize tree */
-    tree = (node**) malloc((2*m+1)*sizeof(node*));
+    suffixTree = CreateTree(2*m+1);
+    /*tree = (node**) malloc((2*m+1)*sizeof(node*));*/
     printf("sizeof(node): %lu\n", sizeof(node*));
-    printf("sizeof(tree): %lu\n", sizeof(tree));
+    printf("sizeof(tree): %lu\n", sizeof(suffixTree));
     printf("initializing tree (m: %d)\n", m);
     for(i = 0; i < 2*m+1; i++){
-      tree[i] = NULL;
+      suffixTree->setOfNodes[i] = NULL;
     }
 
-    root = CreateNode();
-    tree[nNodes] = root;
-    nNodes++;
-
     sentinel = CreateNode();
-    tree[nNodes] = sentinel;
-    nNodes++;
+    AddNode(suffixTree, sentinel);
+
+    root = CreateNode();
+    AddNode(suffixTree, root);
+    root->slink = sentinel;
 
     sentinel->child = root;
     sentinel->slink = root;
     sentinel->sentinelQ = true;
-    root->slink = sentinel;
 
-
-
-
-    
-    return tree;
-    
+    for(i = 0; i < nStrings; i++){
+        setOfStrings[i][stringSizes[i]-1] = '\1';
+        for(j = 0; j < stringSizes[i]; j++){
+            p->a = root;
+            p->b = root;
+            p->s = j;
+            /*while(!DescendQ(suffixTree, p, setOfStrings[i][j])){*/
+                /*AddLeaf(suffixTree, p, i, j);*/
+                /*SuffixLink(suffixTree, p);*/
+            /*}*/
+            /*Descend(suffixTree, p, setOfStrings[i][j]);*/
+        }
+        setOfStrings[i][stringSizes[i]-1] = '\0'; /* restore terminator */
+    }
+    free(p);
+    return suffixTree;  
 }
 
 node* CreateNode(){
@@ -176,6 +203,24 @@ node* CreateNode(){
     new_node->sentinelQ = false;
 
     return new_node;
+}
+
+tree* CreateTree(int size){
+
+    tree* retTree = malloc(sizeof(tree));
+    retTree->setOfNodes = malloc(size*sizeof(node));
+    retTree->nNodes = 0;
+
+    return retTree;
+}
+
+void AddNode(tree* tree, node* node){
+    tree->setOfNodes[tree->nNodes] = node;
+    tree->nNodes++;
+}
+
+node* GetLastNode(tree* tree){
+    return tree->setOfNodes[tree->nNodes-1];
 }
 
 int CharToInt(char c){
